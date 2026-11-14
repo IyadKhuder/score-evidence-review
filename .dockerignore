@@ -1,0 +1,27 @@
+# Explicit allowlist: credentials, local databases and generated artifacts stay out.
+**
+!Dockerfile
+!requirements.txt
+!requirements-workflow.txt
+!requirements-api.txt
+!constraints.txt
+!src/
+!src/**
+src/**/__pycache__/
+src/**/*.pyc
+!policy_memos/
+!policy_memos/*.md
+!data/
+!data/manifest.json
+!data/scenarios.json
+!data/scores_extended.csv
+
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+!frontend/build.mjs
+!frontend/index.html
+!frontend/style.css
+!frontend/src/
+!frontend/src/**

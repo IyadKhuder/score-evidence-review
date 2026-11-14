@@ -1,0 +1,94 @@
+name: Score Evidence Review checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.12']
+    env:
+      POLICY_VERSION: v1.0
+      GEMINI_API_KEY: ''
+      ANTHROPIC_API_KEY: ''
+      SLACK_BOT_TOKEN: ''
+      SLACK_APP_TOKEN: ''
+      SLACK_ALLOWED_CHANNEL_ID: ''
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: |
+            requirements*.txt
+            constraints.txt
+      - name: Install regression dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Check dependency consistency
+        run: python -m pip check
+      - name: Verify synthetic inputs and build database
+        run: python -m src.data_loader
+      - name: Run offline tests
+        run: python -m pytest -q -rs
+      - name: Verify extracted source integrity
+        run: python scripts/verify_source.py
+      - name: Benchmark deterministic case paths
+        run: python -m scripts.benchmark_cases_phase2 --output generated/ci_cases.json
+
+  container:
+    name: Local API container and durable restart
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Disposable CI-only token; no provider credentials or paid calls.
+      COPILOT_API_TOKEN: ci-disposable-offline-token-for-m31-only
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Build and start container
+        run: docker compose up --build --detach --wait
+      - name: Submit and pause for review over HTTP
+        run: python -m scripts.smoke_api_phase2 prepare
+      - name: Replace container while preserving named volume
+        run: docker compose up --detach --force-recreate --wait
+      - name: Verify restart, idempotency and analyst decision
+        run: python -m scripts.smoke_api_phase2 resume
+      - name: Verify UI shell, assets and read-only evidence
+        run: python -m scripts.smoke_ui_phase2
+      - name: Verify browser review API contract
+        run: python -m scripts.smoke_review_phase2
+      - name: Container diagnostics
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop container
+        if: always()
+        run: docker compose down
+
+  frontend:
+    name: TypeScript evidence view
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --ignore-scripts
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend

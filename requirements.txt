@@ -1,0 +1,8 @@
+# Offline deterministic runtime and verified synthetic setup.
+-c constraints.txt
+pandas==3.0.6
+pydantic==2.14.1
+langgraph==1.2.19
+langgraph-checkpoint-sqlite==3.1.3
+fastapi==0.162.1
+uvicorn==0.54.0
