@@ -40,3 +40,11 @@ These results support a first local Git snapshot with the remaining observations
 ## Record management
 
 SOURCE_MANIFEST.json remains the immutable extraction inventory and hash baseline. This newly added owner-verification document is a later supplemental record and is staged explicitly alongside that baseline. scripts/verify_source.py checks the original extraction files; Git tracks this supplemental record after initialization. Do not regenerate original extraction hashes merely to add verification notes.
+
+## Closure update — 15 November 2026
+
+M5.1 functional verification is complete. Owner Windows checks, both independent
+CI results, fresh Slack smoke and case-review Operations/disconnect/reconnect
+observations are reconciled in [the closure record](M5_1_Closure_2026-11-15.md).
+Earlier pending statements above describe preparation-time status and are
+superseded by that dated record. Original extraction hashes remain unchanged.
